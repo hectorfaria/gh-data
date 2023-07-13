@@ -10,16 +10,22 @@ jobs:
       - name: Get code
         uses: actions/checkout@v3
       - name: Cache dependencies
+        id: cache
         uses: actions/cache@v3
         with:
           path: ~/.npm
           key: deps-node-module-${{hashFiles('**/package-lock.json')}}
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Lint code
         run: npm run lint
       - name: Test code
+        id: run-test
         run: npm run test
+      - name: upload results
+        if: failure() && steps.run-test.outcome == 'failure'
+        run: echo 'test'
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -30,10 +36,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Cache dependencies
         uses: actions/cache@v3
+        id: cache
         with:
           path: ~/.npm
           key: deps-node-module-${{hashFiles('**/package-lock.json')}}
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
       - name: Build website
         run: npm run build
